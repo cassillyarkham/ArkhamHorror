@@ -1,39 +1,16 @@
-FROM node:24.7.0-alpine AS frontend
+FROM haskell:9.2.8-buster AS builder
+WORKDIR /app
+COPY . .
+RUN stack setup
+RUN stack build --copy-bins
 
-# Frontend
-
-ENV LC_ALL=C.UTF-8
-
-ARG ASSET_HOST=""
-
-RUN mkdir -p /opt/arkham/src/frontend
-
-WORKDIR /opt/arkham/src/frontend
-COPY ./frontend/package.json ./frontend/tsconfig.json ./frontend/vite.config.js ./frontend/.eslintrc.cjs ./frontend/package-lock.json /opt/arkham/src/frontend/
-RUN --mount=type=cache,target=/root/.npm npm ci
-COPY ./frontend /opt/arkham/src/frontend
-ENV VITE_ASSET_HOST=${ASSET_HOST}
-RUN npm run build
-
-FROM ubuntu:22.04 AS base
-
-ARG DEBIAN_FRONTEND=noninteractive
-ENV LC_ALL=C.UTF-8
-ENV TZ=UTC
-
-# install dependencies
-RUN \
-    ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone && \
-    apt-get update -y && \
-    apt-get install -y --no-install-recommends --fix-missing \
-        libpcre3 \
-        libpcre3-dev \
-        libpq-dev \
-        curl \
-        libtinfo6 \
-        libnuma-dev \
-        zlib1g-dev \
-        libgmp-dev \
+FROM debian:buster-slim
+RUN apt-get update && apt-get install -y libpq-dev ca-certificates
+WORKDIR /app
+COPY --from=builder /root/.local/bin/arkham-horror-backend .
+# Wir gehen davon aus, dass das Frontend mit ausgeliefert wird
+EXPOSE 3000
+CMD ["./arkham-horror-backend"]
         libgmp10 \
         libtinfo-dev \
         git \
