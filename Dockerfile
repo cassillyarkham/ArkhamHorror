@@ -1,16 +1,16 @@
 FROM node:24.7.0-alpine AS frontend
 
 # Frontend
-
 ENV LC_ALL=C.UTF-8
-
 ARG ASSET_HOST=""
 
 RUN mkdir -p /opt/arkham/src/frontend
-
 WORKDIR /opt/arkham/src/frontend
+
 COPY ./frontend/package.json ./frontend/tsconfig.json ./frontend/vite.config.js ./frontend/.eslintrc.cjs ./frontend/package-lock.json /opt/arkham/src/frontend/
-RUN --mount=type=cache,target=/root/.npm npm ci
+# Reparatur: Cache-Mount entfernt
+RUN npm ci
+
 COPY ./frontend /opt/arkham/src/frontend
 ENV VITE_ASSET_HOST=${ASSET_HOST}
 RUN npm run build
@@ -87,9 +87,8 @@ COPY ./backend/stack.yaml ./backend/stack.yaml.lock /opt/arkham/src/backend/
 COPY ./backend/arkham-api/package.yaml /opt/arkham/src/backend/arkham-api/package.yaml
 COPY ./backend/validate/package.yaml /opt/arkham/src/backend/validate/package.yaml
 COPY ./backend/cards-discover/package.yaml /opt/arkham/src/backend/cards-discover/package.yaml
-RUN --mount=type=cache,id=stack-home-${CACHE_ID},target=/root/.stack \
-    --mount=type=cache,id=stack-work-shared-${CACHE_ID},target=/opt/arkham/src/backend/.stack-work \
-    stack build --system-ghc --dependencies-only --no-terminal --ghc-options '-fno-write-ide-info -j4 +RTS -A128m -n2m -RTS'
+# Reparatur: Cache-Mounts entfernt
+RUN stack build --system-ghc --dependencies-only --no-terminal --ghc-options '-fno-write-ide-info -j4 +RTS -A128m -n2m -RTS'
 
 FROM dependencies AS api
 
@@ -100,27 +99,17 @@ RUN mkdir -p \
 COPY ./backend /opt/arkham/src/backend
 
 WORKDIR /opt/arkham/src/backend/cards-discover
-RUN --mount=type=cache,id=stack-home-${CACHE_ID},target=/root/.stack \
-    --mount=type=cache,id=stack-work-shared-${CACHE_ID},target=/opt/arkham/src/backend/.stack-work \
-    --mount=type=cache,id=stack-discover-${CACHE_ID},target=/opt/arkham/src/backend/cards-discover/.stack-work \
-    stack build --system-ghc --no-terminal --ghc-options '-fno-write-ide-info -j4 +RTS -A128m -n2m -RTS' cards-discover
+# Reparatur: Cache-Mounts entfernt
+RUN stack build --system-ghc --no-terminal --ghc-options '-fno-write-ide-info -j4 +RTS -A128m -n2m -RTS' cards-discover
 
 WORKDIR /opt/arkham/src/backend/arkham-api
-RUN --mount=type=cache,id=stack-home-${CACHE_ID},target=/root/.stack \
-    --mount=type=cache,id=stack-work-shared-${CACHE_ID},target=/opt/arkham/src/backend/.stack-work \
-    --mount=type=cache,id=stack-api-${CACHE_ID},target=/opt/arkham/src/backend/arkham-api/.stack-work \
-    --mount=type=cache,id=stack-discover-${CACHE_ID},target=/opt/arkham/src/backend/cards-discover/.stack-work \
-    --mount=type=cache,id=stack-validate-${CACHE_ID},target=/opt/arkham/src/backend/validate/.stack-work \
-    --mount=type=cache,id=stack-api-hie-${CACHE_ID},target=/opt/arkham/src/backend/arkham-api/.hie \
-    --mount=type=cache,id=stack-validate-hie-${CACHE_ID},target=/opt/arkham/src/backend/validate/.hie \
-    --mount=type=cache,id=stack-discover-hie-${CACHE_ID},target=/opt/arkham/src/backend/cards-discover/.hie \
-  stack build --no-terminal --system-ghc --ghc-options '-rtsopts -with-rtsopts=-V0 -j4 +RTS -V0 -A128m -n2m -RTS' && \
+# Reparatur: Alle Cache-Mounts entfernt
+RUN stack build --no-terminal --system-ghc --ghc-options '-rtsopts -with-rtsopts=-V0 -j4 +RTS -V0 -A128m -n2m -RTS' && \
   stack --no-terminal --local-bin-path /opt/arkham/bin install
 
 FROM ubuntu:22.04 AS app
 
 # App
-
 ENV LC_ALL=C.UTF-8
 
 RUN apt-get update && \
