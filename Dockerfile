@@ -1,39 +1,10 @@
-FROM haskell:9.2.8-buster AS builder
+FROM haskell:9.2.8
 WORKDIR /app
 COPY . .
 RUN stack setup
 RUN stack build --copy-bins
-
-FROM debian:buster-slim
-RUN apt-get update && apt-get install -y libpq-dev ca-certificates
-WORKDIR /app
-COPY --from=builder /root/.local/bin/arkham-horror-backend .
-# Wir gehen davon aus, dass das Frontend mit ausgeliefert wird
 EXPOSE 3000
-CMD ["./arkham-horror-backend"]
-        libgmp10 \
-        libtinfo-dev \
-        git \
-        wget \
-        lsb-release \
-        software-properties-common \
-        gnupg2 \
-        apt-transport-https \
-        gcc \
-        autoconf \
-        automake \
-        build-essential && \
-  rm -rf /var/lib/apt/lists/*
-
-ARG TARGETARCH
-
-# install ghcup
-RUN \
-    if [ "$TARGETARCH" = "arm64" ]; then \
-    curl https://downloads.haskell.org/~ghcup/aarch64-linux-ghcup > /usr/bin/ghcup; \
-    else \
-    curl https://downloads.haskell.org/~ghcup/x86_64-linux-ghcup > /usr/bin/ghcup; \
-    fi;
+CMD ["stack", "exec", "arkham-horror-backend"]
 # Don't combine
 RUN chmod +x /usr/bin/ghcup && \
     ghcup config set gpg-setting GPGNone
