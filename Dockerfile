@@ -1,7 +1,7 @@
-# Wir nutzen ein moderneres Haskell-Image direkt
-FROM haskell:9.10.1-slim AS builder
+# Wir nutzen ein Image, das garantiert existiert
+FROM haskell:9.10 AS builder
 
-# Installiere System-Abhängigkeiten für den Build
+# System-Abhängigkeiten installieren
 RUN apt-get update && apt-get install -y \
     libpq-dev \
     git \
@@ -11,7 +11,7 @@ RUN apt-get update && apt-get install -y \
 WORKDIR /app
 COPY . .
 
-# Wir bauen das Projekt direkt mit Cabal, was oft stabiler ist als Stack in Docker
+# Projekt bauen
 RUN cabal update
 RUN cabal build --install-method=copy --installdir=. arkham-horror-backend
 
@@ -20,7 +20,7 @@ FROM debian:bullseye-slim
 RUN apt-get update && apt-get install -y libpq-dev ca-certificates && rm -rf /var/lib/apt/lists/*
 WORKDIR /app
 
-# Kopiere die ausführbare Datei aus dem Builder-Stage
+# Ausführbare Datei kopieren
 COPY --from=builder /app/arkham-horror-backend .
 
 EXPOSE 3000
