@@ -1,6 +1,5 @@
 [build]
 builder = "NIXPACKS"
 
-[span_4](start_span)[deploy]
+[deploy]
 startCommand = "stack exec arkham-horror-backend"
-restartPolicy = "always"
